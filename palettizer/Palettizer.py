@@ -227,9 +227,8 @@ class Palettizer(object):
         # If necessary and possible, create an alpha image as well.
         # Textures with alpha always have four channels set (three for RGB and one for Alpha).
         if create_rgb and has_alpha:
-            alpha_image = PNMImage(new_x_size, new_y_size)
+            alpha_image = PNMImage(new_x_size, new_y_size, 1)
             alpha_image.set_type(RGB_TYPE)
-            alpha_image.add_alpha()
 
         for i, placement in enumerate(palette_img.placements):
             # Find the loaded source image from before...
@@ -252,7 +251,7 @@ class Palettizer(object):
             if alpha_image:
                 for i in range(tex_x_size):
                     for j in range(tex_y_size):
-                        alpha_image.set_alpha(tex_x + i, tex_y + j, texture_img.get_alpha(i, j))
+                        alpha_image.set_gray(tex_x + i, tex_y + j, texture_img.get_alpha(i, j))
 
             # Last step: copy our entire image over to the RGB image!
             new_image.copy_sub_image(texture_img, tex_x, tex_y, 0, 0, tex_x_size, tex_y_size)
@@ -303,4 +302,4 @@ class Palettizer(object):
 
         # Write our alpha file if it exists.
         if alpha_image is not None:
-            alpha_image.write(Filename.from_os_specific(palette_path[:-1] + '_a.rgb'))
+            alpha_image.write(Filename.from_os_specific(palette_path + '_a.rgb'))
