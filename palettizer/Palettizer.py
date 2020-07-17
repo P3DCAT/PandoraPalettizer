@@ -67,8 +67,20 @@ class Palettizer(object):
         if self.debug:
             print(f'Dumping .boo file to {filename}...')
 
+        textures = '\n'
+
+        for palette_img in sorted(self.boo_file.get_objects_of_type('PaletteImage'), key=lambda img: (img.get_phase_num(), img.basename)):
+            textures += f'Palette {palette_img.page.group.dirname}/maps/{palette_img.basename}jpg:\n'
+
+            for placement in palette_img.placements:
+                for source in placement.texture.sources:
+                    textures += f'{source.filename}\n'
+
+            textures += '\n'
+
         with open(filename, 'w') as f:
             f.write(self.boo_file.dump_objects())
+            f.write(textures[:-1])
 
     def palettize_all_boo(self, jpg_output_dir, png_output_dir, save_png=True, save_jpg=True):
         """
@@ -221,7 +233,7 @@ class Palettizer(object):
         new_image = PNMImage(new_x_size, new_y_size, 4)
 
         # Textures with alpha always have four channels set (three for RGB and one for Alpha).
-        has_alpha = palette_img.properties.effective_channels == 4
+        has_alpha = palette_img.properties.effective_channels in (2, 4)
         alpha_image = None
 
         # If necessary and possible, create an alpha image as well.

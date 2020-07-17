@@ -22,6 +22,14 @@ class PaletteImage(ImageFile):
     def page(self):
         return self.bam_file.get_object(self.page_id)
 
+    def get_phase_num(self):
+        phase = self.page.group.dirname
+
+        try:
+            return float(phase.split('_')[-1])
+        except:
+            return -1
+
     def load(self, di):
         ImageFile.load(self, di)
         num_cleared_regions = di.get_uint32()
