@@ -1,7 +1,7 @@
 from panda3d.core import Datagram, DatagramIterator
 
 """
-  REPALETTIZER
+  PANDORA PALETTIZER
   First written for use in PANDORA
 
   Author: Disyer

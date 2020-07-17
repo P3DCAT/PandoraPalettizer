@@ -3,7 +3,7 @@ from .TextureProperties import TextureProperties
 from .BamGlobals import *
 
 """
-  REPALETTIZER
+  PANDORA PALETTIZER
   First written for use in PANDORA
 
   Author: Disyer
@@ -17,7 +17,7 @@ class ImageFile(BamObject):
     def load(self, di):
         self.properties = self.load_type(TextureProperties, di)
         self.filename = di.get_string()
-        self.alpha_filename = di.get_string()
+        self.alpha_filename = di.get_string() # Always empty on source image
 
         if PI_VERSION >= 10:
             self.alpha_file_channel = di.get_uint8()

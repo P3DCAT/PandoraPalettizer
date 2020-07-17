@@ -3,7 +3,7 @@ from .PaletteGroups import PaletteGroups
 from .BamGlobals import *
 
 """
-  REPALETTIZER
+  PANDORA PALETTIZER
   First written for use in PANDORA
 
   Author: Disyer
@@ -73,8 +73,8 @@ class PaletteGroup(BamObject):
             self.dependency_level,
             self.dependency_order,
             self.dirname_order,
-            self.placement_ids,#', '.join([str(placement) for placement in self.placements]),
-            self.page_ids,#', '.join([str(page) for page in self.pages]),
+            self.placement_ids,
+            self.page_ids,
             self.has_margin_override,
             self.margin_override
         )

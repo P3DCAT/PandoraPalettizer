@@ -3,7 +3,7 @@ from .ImageFile import ImageFile
 from .BamGlobals import *
 
 """
-  REPALETTIZER
+  PANDORA PALETTIZER
   First written for use in PANDORA
 
   Author: Disyer

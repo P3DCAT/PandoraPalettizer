@@ -1,3 +1,11 @@
+"""
+  PANDORA PALETTIZER
+  First written for use in PANDORA
+
+  Author: Disyer
+  Date: 2020/07/17
+"""
+
 ### FORMAT
 F_unspecified = 0
 F_rgba = 1

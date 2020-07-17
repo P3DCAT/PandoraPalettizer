@@ -1,6 +1,13 @@
 from .BamObject import BamObject
 from .BamGlobals import *
 
+"""
+  PANDORA PALETTIZER
+  First written for use in PANDORA
+
+  Author: Disyer
+  Date: 2020/07/17
+"""
 class Matrix3F(BamObject):
 
     def __init__(self, bam_file, bam_version):

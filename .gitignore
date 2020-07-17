@@ -4,5 +4,7 @@ __pycache__
 *.bak
 *.swp
 
+built_palettes
+
 *.boo
 boo.txt

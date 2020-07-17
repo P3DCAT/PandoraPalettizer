@@ -5,7 +5,7 @@ from .BamGlobals import *
 import os
 
 """
-  REPALETTIZER
+  PANDORA PALETTIZER
   First written for use in PANDORA
 
   Author: Disyer
@@ -38,23 +38,28 @@ class BamFile(object):
         dump = []
 
         for obj_id in self.objects.keys():
-            dump.append('{}: {}'.format(obj_id, self.get_object(obj_id)))
+            obj = self.get_object(obj_id)
+            dump.append(f'{obj_id}: {obj}')
 
         return '\n'.join(dump)
 
-    def get_object(self, object_id):
+    def get_object(self, object_id, obj=None):
         if object_id in self.object_cache:
             return self.object_cache[object_id]
 
-        obj = self.objects.get(object_id)
+        if obj is None:
+            obj = self.objects.get(object_id)
 
-        if obj:
-            node = self.bam_factory.create(self, obj['handle_name'], bam_version=self.version)
+            if obj is None:
+                return
 
-            if node:
-                node.load_object(obj)
-                self.object_cache[object_id] = node
-                return node
+        node = self.bam_factory.create(self, obj['handle_name'], bam_version=self.version)
+
+        if node is not None:
+            node.load_object(obj)
+
+        self.object_cache[object_id] = node
+        return node
 
     def get_handle_id_by_name(self, handle_name):
         if not isinstance(handle_name, str):
@@ -92,6 +97,9 @@ class BamFile(object):
             children.append(parent_id)
 
         return children
+
+    def get_objects_of_type(self, type_name):
+        return [self.get_object(obj_id, obj) for obj_id, obj in self.objects.items() if obj['handle_name'] == type_name]
 
     def load(self, f):
         if f.read(len(self.HEADER)) != self.HEADER:
@@ -293,9 +301,9 @@ class BamFile(object):
         written_handles = []
 
         if self.objects:
-            self.write_object(dg, BOC_push, self.objects.values()[0], written_handles)
+            self.write_object(dg, BOC_push, list(self.objects.values())[0], written_handles)
 
-            for obj in self.objects.values()[1:]:
+            for obj in list(self.objects.values())[1:]:
                 self.write_object(dg, BOC_adjunct, obj, written_handles)
 
         for data in self.file_datas:

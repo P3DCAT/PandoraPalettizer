@@ -5,7 +5,7 @@ from .BamGlobals import *
 from .TextureGlobals import *
 
 """
-  REPALETTIZER
+  PANDORA PALETTIZER
   First written for use in PANDORA
 
   Author: Disyer

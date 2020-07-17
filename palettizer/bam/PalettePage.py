@@ -3,7 +3,7 @@ from .TextureProperties import TextureProperties
 from .BamGlobals import *
 
 """
-  REPALETTIZER
+  PANDORA PALETTIZER
   First written for use in PANDORA
 
   Author: Disyer

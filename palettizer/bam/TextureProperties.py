@@ -3,7 +3,7 @@ from .TextureGlobals import *
 from .BamGlobals import *
 
 """
-  REPALETTIZER
+  PANDORA PALETTIZER
   First written for use in PANDORA
 
   Author: Disyer
@@ -19,9 +19,9 @@ class TextureProperties(BamObject):
         self.num_channels = di.get_int32()
 
         if PI_VERSION >= 9:
-            self.effective_num_channels = di.get_int32()
+            self.effective_channels = di.get_int32()
         else:
-            self.effective_num_channels = num_channels
+            self.effective_channels = num_channels
 
         self.format = di.get_int32()
         self.force_format = di.get_bool()
@@ -54,7 +54,7 @@ class TextureProperties(BamObject):
         dg.add_int32(self.num_channels)
 
         if PI_VERSION >= 9:
-            dg.add_int32(self.effective_num_channels)
+            dg.add_int32(self.effective_channels)
 
         dg.add_int32(self.format)
         dg.add_bool(self.force_format)
@@ -86,7 +86,7 @@ class TextureProperties(BamObject):
     def __str__(self):
         return 'TextureProperties(got_channels={0}, effective_channels={1}, force_format={2}, generic_format={3}, keep_format={4}, format={5}, minfilter={6}, magfilter={7}, anisotropic_degree={8}, type={9}, quality={10})'.format(
             self.got_num_channels,
-            self.effective_num_channels,
+            self.effective_channels,
             self.force_format,
             self.generic_format,
             self.keep_format,

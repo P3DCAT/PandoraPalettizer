@@ -4,7 +4,7 @@ from .TextureGlobals import *
 from .BamGlobals import *
 
 """
-  REPALETTIZER
+  PANDORA PALETTIZER
   First written for use in PANDORA
 
   Author: Disyer
@@ -54,3 +54,6 @@ class TexturePosition(BamObject):
             get_wrap_mode_string(self.wrap_u),
             get_wrap_mode_string(self.wrap_v)
         )
+
+    def __eq__(self, other):
+        return self.margin == other.margin and self.x == other.x and self.y == other.y and self.x_size == other.x_size and self.y_size == other.y_size
