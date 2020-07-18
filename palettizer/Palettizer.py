@@ -1,8 +1,9 @@
-from panda3d.core import Filename, PNMImage
+from panda3d.core import Filename, PNMImage, LTexCoordd
 from .bam.BamFile import BamFile
+from .bam import TextureGlobals
 from .PalettizeGlobals import *
 from . import PalettizeUtils
-import os
+import os, math
 
 """
   PANDORA PALETTIZER
@@ -23,6 +24,9 @@ class Palettizer(object):
         self.debug = debug
 
         self.boo_file = None
+
+    def get_sorted_palette_imgs(self):
+        return sorted(self.boo_file.get_objects_of_type('PaletteImage'), key=lambda img: (img.get_phase_num(), img.basename))
 
     def set_pandora_dir(self, pandora_dir):
         """
@@ -69,7 +73,7 @@ class Palettizer(object):
 
         textures = '\n'
 
-        for palette_img in sorted(self.boo_file.get_objects_of_type('PaletteImage'), key=lambda img: (img.get_phase_num(), img.basename)):
+        for palette_img in self.get_sorted_palette_imgs():
             textures += f'Palette {palette_img.page.group.dirname}/maps/{palette_img.basename}jpg:\n'
 
             for placement in palette_img.placements:
@@ -96,7 +100,7 @@ class Palettizer(object):
         if not save_png and not save_jpg:
             raise PalettizerException('No action required.')
 
-        for palette_img in self.boo_file.get_objects_of_type('PaletteImage'):
+        for palette_img in self.get_sorted_palette_imgs():
             new_image, alpha_image, has_alpha = self.palettize(palette_img, create_rgb=save_jpg)
 
             if save_png:
@@ -181,12 +185,12 @@ class Palettizer(object):
             if not os.path.exists(full_filename):
                 # We couldn't find the source file using the palettizer path.
                 # Let's look in the entire Pandora folder!
-                file_basename = os.path.basename(filename)
+                file_basename = os.path.basename(source.filename)
                 full_filename = PalettizeUtils.search_for_file_in(self.pandora_dir, file_basename)
 
                 if not full_filename:
                     # Well, it's not here...
-                    raise PalettizerException(f'File does not exist in Pandora: {filename}')
+                    raise PalettizerException(f'File does not exist in Pandora: {source.filename}')
 
             if self.debug:
                 print(f'Reading {full_filename}...')
@@ -195,10 +199,12 @@ class Palettizer(object):
             img = PNMImage()
             img.read(Filename.from_os_specific(full_filename))
 
-            if img.num_channels != 4:
+            needs_alpha_fill = img.num_channels != 4
+            img.setColorType(4)
+
+            if needs_alpha_fill:
                 # We need an alpha channel no matter what, so if the image does not have one,
-                # create an alpha channel, and fill it immediately with opaque pixels
-                img.add_alpha()
+                # it needs to be filled immediately with opaque pixels as it starts out with transparent pixels
                 img.alpha_fill(1)
 
             # Add the source image to our list
@@ -246,27 +252,81 @@ class Palettizer(object):
             # Find the loaded source image from before...
             texture_img = imgs[i]
 
-            # Calculate the placement of our image using the distortion!
-            tex_position = placement.position
-            tex_x_size = round(tex_position.x_size * x_distortion)
-            tex_y_size = round(tex_position.y_size * y_distortion)
+            # Calculate the placement of our image!
+            tex_position = placement.placed
+
+            # Determine the upper left and lower right corners
+            # with some matrix magic.
+            transform = placement.compute_tex_matrix()
+            ul = transform.xform_point(LTexCoordd(0.0, 1.0))
+            lr = transform.xform_point(LTexCoordd(1.0, 0.0))
+
+            # Calculate the top, left, bottom and right corners.
+            top = int(math.floor((1.0 - ul[1]) * new_y_size + 0.5))
+            left = int(math.floor(ul[0] * new_x_size + 0.5))
+            bottom = int(math.floor((1.0 - lr[1]) * new_y_size + 0.5))
+            right = int(math.floor(lr[0] * new_x_size + 0.5))
+
+            tex_x_size = right - left
+            tex_y_size = bottom - top
+            org_x_size = round(tex_position.x_size * x_distortion)
+            org_y_size = round(tex_position.y_size * y_distortion)
             tex_x = round(tex_position.x * x_distortion)
             tex_y = round(tex_position.y * y_distortion)
 
             if texture_img.get_x_size() != tex_x_size or texture_img.get_y_size() != tex_y_size:
-                # Resize the image using Panda3D's quick filter algorithm, to fit our x_size and y_size.
+                # Resize the image using Panda3D's gaussian filter algorithm, to fit our x_size and y_size.
+                # WARNING! This blurs the image if too small!!! (Gaussian blur)
                 new_texture_img = PNMImage(tex_x_size, tex_y_size, texture_img.get_num_channels(), texture_img.get_maxval(), texture_img.get_type())
-                new_texture_img.quick_filter_from(texture_img)
+                new_texture_img.gaussianFilterFrom(1.0, texture_img)
                 texture_img = new_texture_img
 
-            # If we've got an alpha image, copy the alpha values manually.
-            if alpha_image:
-                for i in range(tex_x_size):
-                    for j in range(tex_y_size):
-                        alpha_image.set_gray(tex_x + i, tex_y + j, texture_img.get_alpha(i, j))
+            for y in range(tex_y, tex_y + org_y_size):
+                sy = y - top
 
-            # Last step: copy our entire image over to the RGB image!
-            new_image.copy_sub_image(texture_img, tex_x, tex_y, 0, 0, tex_x_size, tex_y_size)
+                # UV wrapping modes - V component (for Y texture coordinate)
+                if placement.placed.wrap_v == TextureGlobals.WM_clamp:
+                    sy = max(min(sy, tex_y_size - 1), 0)
+                elif placement.placed.wrap_v == TextureGlobals.WM_mirror:
+                    sy = (tex_y_size * 2) - 1 - ((-sy - 1) % (tex_y_size * 2)) if sy < 0 else sy % (tex_y_size * 2)
+                    sy = sy if sy < tex_y_size else 2 * tex_y_size - sy - 1
+                elif placement.placed.wrap_v == TextureGlobals.WM_mirror_once:
+                    sy = sy if sy < tex_y_size else 2 * tex_y_size - sy - 1
+
+                    # Repeat texture
+                    sy = tex_y_size - 1 - ((-sy - 1) % tex_y_size) if sy < 0 else sy % tex_y_size
+                elif placement.placed.wrap_v == TextureGlobals.WM_border_color:
+                    if sy < 0 or sy >= tex_y_size:
+                        continue
+                else:
+                    # Repeat texture
+                    sy = tex_y_size - 1 - ((-sy - 1) % tex_y_size) if sy < 0 else sy % tex_y_size
+
+                for x in range(tex_x, tex_x + org_x_size):
+                    sx = x - left
+
+                    # UV wrapping modes - U component (for X texture coordinate)
+                    if placement.placed.wrap_u == TextureGlobals.WM_clamp:
+                        sx = max(min(sx, tex_x_size - 1), 0)
+                    elif placement.placed.wrap_u == TextureGlobals.WM_mirror:
+                        sx = (tex_x_size * 2) - 1 - ((-sx - 1) % (tex_x_size * 2)) if sx < 0 else sx % (tex_x_size * 2)
+                        sx = sx if sx < tex_x_size else 2 * tex_x_size - sx - 1
+                    elif placement.placed.wrap_u == TextureGlobals.WM_mirror_once:
+                        sx = sx if sx >= 0 else ~sx
+
+                        # Repeat texture
+                        sx = tex_x_size - 1 - ((-sx - 1) % tex_x_size) if sx < 0 else sx % tex_x_size
+                    elif placement.placed.wrap_u == TextureGlobals.WM_border_color:
+                        if sx < 0 or sx >= tex_x_size:
+                            continue
+                    else:
+                        # Repeat texture
+                        sx = tex_x_size - 1 - ((-sx - 1) % tex_x_size) if sx < 0 else sx % tex_x_size
+
+                    new_image.set_xel(x, y, texture_img.get_xel(sx, sy))
+
+                    if alpha_image:
+                        alpha_image.set_gray(x, y, texture_img.get_alpha(sx, sy))
 
         return new_image, alpha_image, has_alpha
 

@@ -1,3 +1,4 @@
+from panda3d.core import LPoint2d
 from .BamObject import BamObject
 from .TextureProperties import TextureProperties
 from .TextureGlobals import *
@@ -15,14 +16,17 @@ class TexturePosition(BamObject):
     def __init__(self, bam_file, bam_version):
         BamObject.__init__(self, bam_file, bam_version)
 
+    def get_uv_range(self):
+        return self.max_uv - self.min_uv
+
     def load(self, di):
         self.margin = di.get_int32()
         self.x = di.get_int32()
         self.y = di.get_int32()
         self.x_size = di.get_int32()
         self.y_size = di.get_int32()
-        self.min_uv = [di.get_float64(), di.get_float64()]
-        self.max_uv = [di.get_float64(), di.get_float64()]
+        self.min_uv = LPoint2d(di.get_float64(), di.get_float64())
+        self.max_uv = LPoint2d(di.get_float64(), di.get_float64())
         self.wrap_u = di.get_int32()
         self.wrap_v = di.get_int32()
 
