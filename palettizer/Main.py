@@ -15,6 +15,8 @@ def main():
     parser.add_argument('--png', '-p', action='store_true', help='Convert palettes to PNG textures.')
     parser.add_argument('--all', '-a', action='store_true', help='Convert palettes to both JPG+RGB and PNG textures.')
     parser.add_argument('--dump', '-d', action='store_true', help='Dump your textures.boo file into a boo.txt dump file.')
+    parser.add_argument('--skip-palette', '-n', action='store_true', help='Skips the creation of palettes.')
+    parser.add_argument('--skip-stray', '-m', action='store_true', help='Skips the creation of stray textures.')
     parser.add_argument('--boo', '-b', help='Your textures.boo file, containing palettization data.')
     parser.add_argument('--output', '-o', help='Your output folder.')
     parser.add_argument('--texture-dir', '-i', help='The location of your Pandora/Spotify folder.')
@@ -40,10 +42,10 @@ def main():
         palettizer.load_boo_file(args.boo)
         palettizer.dump_boo_to_text('boo.txt')
 
-    jpg = args.all or args.jpg
-    png = args.all or args.png
+    save_jpg = args.all or args.jpg
+    save_png = args.all or args.png
 
-    if not jpg and not png:
+    if (not save_jpg and not save_png) or (args.skip_palette and args.skip_stray):
         if not args.dump:
             parser.print_help()
             print('Nothing to do. Are you sure you did not forget --all?')
@@ -69,14 +71,17 @@ def main():
         print('There is no maps folder in your Pandora directory!')
         return
 
+    jpg_output_dir = os.path.join(args.output, 'jpg')
+    png_output_dir = os.path.join(args.output, 'png')
+
     palettizer.set_pandora_dir(args.texture_dir)
     palettizer.load_boo_file(args.boo)
-    palettizer.palettize_all_boo(
-        jpg_output_dir=os.path.join(args.output, 'jpg'),
-        png_output_dir=os.path.join(args.output, 'png'),
-        save_png=png,
-        save_jpg=jpg
-    )
+
+    if not args.skip_palette:
+        palettizer.palettize_all(jpg_output_dir, png_output_dir, save_jpg, save_png)
+
+    if not args.skip_stray:
+        palettizer.save_all_strays(jpg_output_dir, png_output_dir, save_jpg, save_png)
 
 if __name__ == '__main__':
     main()

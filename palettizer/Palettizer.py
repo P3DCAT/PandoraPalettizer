@@ -28,6 +28,9 @@ class Palettizer(object):
     def get_sorted_palette_imgs(self):
         return sorted(self.boo_file.get_objects_of_type('PaletteImage'), key=lambda img: (img.get_phase_num(), img.basename))
 
+    def get_texture_imgs(self):
+        return self.boo_file.get_objects_of_type('TextureImage')
+
     def set_pandora_dir(self, pandora_dir):
         """
         Set the directory containing all Pandora textures.
@@ -40,13 +43,76 @@ class Palettizer(object):
         else:
             self.maps_dir = os.path.join(pandora_dir, 'maps')
 
+    def find_texture(self, filename):
+        """
+        Finds any texture from the Pandora resources repository.
+        Throws a PalettizerException if file could not be found.
+            :filename: Relative filename that you are looking for.
+        """
+        full_filename = os.path.abspath(os.path.join(self.maps_dir, filename))
+
+        if not os.path.exists(full_filename):
+            # We couldn't find the file using the palettizer path.
+            # Let's look in the entire Pandora folder!
+            file_basename = os.path.basename(ilename)
+            full_filename = PalettizeUtils.search_for_file_in(self.pandora_dir, file_basename)
+
+            if not full_filename:
+                # Well, it's not here...
+                raise PalettizerException(f'File does not exist in Pandora: {filename}')
+
+        return full_filename
+
+    def read_texture(self, filename):
+        """
+        Reads a texture from the Pandora resources repository.
+        Returns a PNMImage object representing the image data.
+        Throws a PalettizerException if file could not be found.
+            :filename: Relative filename pointing to a texture file in the Pandora repository.
+        """
+        full_filename = self.find_texture(filename)
+
+        if self.debug:
+            print(f'Reading {full_filename}...')
+
+        # We've found the source file! Let's load it using Panda3D.
+        img = PNMImage()
+        img.read(Filename.from_os_specific(full_filename))
+
+        needs_alpha_fill = img.num_channels != 4
+        img.set_color_type(4)
+
+        if needs_alpha_fill:
+            # We need an alpha channel no matter what, so if the image does not have one,
+            # it needs to be filled immediately with opaque pixels as it starts out with transparent pixels
+            img.alpha_fill(1)
+
+        return img
+
+    def resize_image(self, image, x_size, y_size):
+        """
+        Resize an image using the Gaussian blur algorithm.
+            :image: A PNMImage representing your image data.
+            :x_size: The desired X size of the texture.
+            :y_size: The desired Y size of the texture.
+        """
+        if image.get_x_size() == x_size and image.get_y_size() == y_size:
+            # This image does not need to be resized!
+            return image
+
+        # Resize the image using Panda3D's gaussian filter algorithm, to fit our x_size and y_size.
+        # WARNING! This blurs the image if too small!!! (Gaussian blur)
+        new_image = PNMImage(x_size, y_size, image.get_num_channels(), image.get_maxval(), image.get_type())
+        new_image.gaussian_filter_from(1.0, image)
+        return new_image
+
     def load_boo_file(self, filename):
         """
         Load a .boo file from the specified filename.
             :filename: The filename that points to the textures.boo file.
         """
         if self.boo_file is not None:
-            # A .boo file is alerady loaded.
+            # A .boo file is already loaded.
             return
 
         if not os.path.exists(filename):
@@ -86,7 +152,7 @@ class Palettizer(object):
             f.write(self.boo_file.dump_objects())
             f.write(textures[:-1])
 
-    def palettize_all_boo(self, jpg_output_dir, png_output_dir, save_png=True, save_jpg=True):
+    def palettize_all(self, jpg_output_dir, png_output_dir, save_png=True, save_jpg=True):
         """
         Palettize all palette images stored inside a BOO file.
             :jpg_output_dir: The directory your JPG+RGB files will be saved to.
@@ -102,11 +168,87 @@ class Palettizer(object):
 
         for palette_img in self.get_sorted_palette_imgs():
             new_image, alpha_image, has_alpha = self.palettize(palette_img, create_rgb=save_jpg)
+            phase_dir = palette_img.page.group.dirname
 
             if save_png:
-                self.write_png(new_image, has_alpha, png_output_dir, palette_img)
+                self.write_png(new_image, has_alpha, png_output_dir, phase_dir, palette_img.basename)
             if save_jpg:
-                self.write_jpg(new_image, alpha_image, jpg_output_dir, palette_img)
+                self.write_jpg(new_image, alpha_image, jpg_output_dir, phase_dir, palette_img.basename)
+
+    def save_all_strays(self, jpg_output_dir, png_output_dir, save_png=True, save_jpg=True):
+        """
+        Save all stray images stored inside a BOO file.
+            :jpg_output_dir: The directory your JPG+RGB files will be saved to.
+            :png_output_dir: The directory your PNG files will be saved to.
+            :save_png: Save PNG variants of the palette
+            :save_jpg: Save JPG+RGB variants of the palette
+        """
+        if not self.boo_file:
+            raise PalettizerException('No boo file loaded!')
+
+        if not save_png and not save_jpg:
+            raise PalettizerException('No action required.')
+
+        for texture_img in self.get_texture_imgs():
+            stray_texture = self.create_stray_texture(texture_img, create_rgb=save_jpg)
+
+            if stray_texture is None:
+                continue
+
+            image, alpha_image, has_alpha, phase_folder, basename, rgb_only = stray_texture
+
+            if save_png:
+                self.write_png(image, has_alpha, png_output_dir, phase_folder, basename)
+            if save_jpg:
+                self.write_jpg(image, alpha_image, jpg_output_dir, phase_folder, basename, rgb_only)
+
+    def create_stray_texture(self, texture_img, create_rgb=True):
+        """
+        Converts a TextureImage into actual PNMImages.
+        Creates an RGB version of the texture if requested.
+            :texture_img: The TextureImage you want to process.
+            :create_rgb: Would you like to create an RGB variant of the texture? True by default.
+        """
+        if not texture_img.dest_ids:
+            # This texture image is not a stray image.
+            return
+
+        source = texture_img.sources[0]
+        dest = texture_img.dests[0]
+
+        # Extrapolate the phase folder from the first assigned group
+        phase_folder = texture_img.actual_assigned_groups.groups[0].dirname
+
+        # Extrapolate the base name from the destination image
+        basename = os.path.splitext(os.path.basename(dest.filename))[0]
+
+        # Is this an RGB only texture?
+        # Some textures, like fonts, are saved as grayscale RGB.
+        rgb_only = texture_img.properties.format == TextureGlobals.F_alpha
+
+        # Read the texture from Pandora!
+        image = self.read_texture(source.filename)
+
+        # Let's save the texture as a power of two resolution.
+        x_size = PalettizeUtils.next_power_of_2(image.get_x_size())
+        y_size = PalettizeUtils.next_power_of_2(image.get_y_size())
+
+        alpha_image = None
+
+        # Resize our image to the desired size.
+        image = self.resize_image(image, x_size, y_size)
+        has_alpha = source.properties.effective_channels in (2, 4)
+
+        if dest.alpha_filename and has_alpha and create_rgb and not rgb_only:
+            alpha_image = PNMImage(x_size, y_size, 1)
+            alpha_image.set_type(RGB_TYPE)
+
+            # Copy alpha channel from source image
+            for i in range(x_size):
+                for j in range(y_size):
+                    alpha_image.set_gray(i, j, image.get_alpha(i, j))
+
+        return image, alpha_image, has_alpha, phase_folder, basename, rgb_only
 
     def palettize(self, palette_img, create_rgb=True):
         """
@@ -179,33 +321,8 @@ class Palettizer(object):
                 if source2.x_size != x_size or source2.y_size != y_size:
                     print(f'Two different source textures are defined for {palette_name}: {source.filename} ({x_size} {y_size}) vs {source2.filename} ({source2.x_size} {source2.y_size})')
 
-            # Time to find the source file from Pandora!
-            full_filename = os.path.abspath(os.path.join(self.maps_dir, source.filename))
-
-            if not os.path.exists(full_filename):
-                # We couldn't find the source file using the palettizer path.
-                # Let's look in the entire Pandora folder!
-                file_basename = os.path.basename(source.filename)
-                full_filename = PalettizeUtils.search_for_file_in(self.pandora_dir, file_basename)
-
-                if not full_filename:
-                    # Well, it's not here...
-                    raise PalettizerException(f'File does not exist in Pandora: {source.filename}')
-
-            if self.debug:
-                print(f'Reading {full_filename}...')
-
-            # We've found the source file! Let's load it using Panda3D.
-            img = PNMImage()
-            img.read(Filename.from_os_specific(full_filename))
-
-            needs_alpha_fill = img.num_channels != 4
-            img.setColorType(4)
-
-            if needs_alpha_fill:
-                # We need an alpha channel no matter what, so if the image does not have one,
-                # it needs to be filled immediately with opaque pixels as it starts out with transparent pixels
-                img.alpha_fill(1)
+            # Time to load the source file from Pandora!
+            img = self.read_texture(source.filename)
 
             # Add the source image to our list
             imgs.append(img)
@@ -274,12 +391,8 @@ class Palettizer(object):
             tex_x = round(tex_position.x * x_distortion)
             tex_y = round(tex_position.y * y_distortion)
 
-            if texture_img.get_x_size() != tex_x_size or texture_img.get_y_size() != tex_y_size:
-                # Resize the image using Panda3D's gaussian filter algorithm, to fit our x_size and y_size.
-                # WARNING! This blurs the image if too small!!! (Gaussian blur)
-                new_texture_img = PNMImage(tex_x_size, tex_y_size, texture_img.get_num_channels(), texture_img.get_maxval(), texture_img.get_type())
-                new_texture_img.gaussianFilterFrom(1.0, texture_img)
-                texture_img = new_texture_img
+            # Resize our image to the desired size.
+            texture_img = self.resize_image(texture_img, tex_x_size, tex_y_size)
 
             for y in range(tex_y, tex_y + org_y_size):
                 sy = y - top
@@ -330,21 +443,22 @@ class Palettizer(object):
 
         return new_image, alpha_image, has_alpha
 
-    def write_png(self, new_image, has_alpha, folder, palette_img):
+    def write_png(self, new_image, has_alpha, folder, phase_dir, basename):
         """
         Saves a previously palettized image as a PNG file.
             :new_image: The palettized image containing RGB data.
             :has_alpha: Does this image contain alpha data?
             :folder: The folder to save the image in.
-            :palette_img: The PaletteImage containing the palette data.
+            :phase_dir: The name of the phase folder containing the texture, for example: "phase_3"
+            :basename: The filename of the image, for example: "avatar_palette_1mla_1"
         """
         # Create the folder if necessary.
-        folder = os.path.join(folder, palette_img.page.group.dirname, 'maps')
+        folder = os.path.join(folder, phase_dir, 'maps')
 
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        palette_path = os.path.join(folder, palette_img.basename.strip('.'))
+        palette_path = os.path.join(folder, basename.strip('.'))
 
         if not has_alpha:
             # We do not have any alpha pixels, it would be wise to remove the alpha channel
@@ -352,21 +466,28 @@ class Palettizer(object):
 
         new_image.write(Filename.from_os_specific(palette_path + '.png'))
 
-    def write_jpg(self, new_image, alpha_image, folder, palette_img):
+    def write_jpg(self, new_image, alpha_image, folder, phase_dir, basename, rgb_only=False):
         """
         Saves a previously palettized image as a PNG file.
             :new_image: The palettized image containing RGB data.
             :alpha_image: The SGI variant of the palettized image containing alpha data.
             :folder: The folder to save the image in.
-            :palette_img: The PaletteImage containing the palette data.
+            :phase_dir: The name of the phase folder containing the texture, for example: "phase_3"
+            :basename: The filename of the image, for example: "avatar_palette_1mla_1"
+            :rgb_only: True if we only want to save the RGB variant of this image.
         """
         # Create the folder if necessary.
-        folder = os.path.join(folder, palette_img.page.group.dirname, 'maps')
+        folder = os.path.join(folder, phase_dir, 'maps')
 
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        palette_path = os.path.join(folder, palette_img.basename.strip('.'))
+        palette_path = os.path.join(folder, basename.strip('.'))
+
+        # We have an RGB only file!
+        if rgb_only:
+            new_image.write(Filename.from_os_specific(palette_path + '.rgb'))
+            return
 
         # JPG files do not require alpha channels, so remove it.
         new_image.remove_alpha()
