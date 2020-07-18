@@ -63,8 +63,7 @@ class Palettizer(object):
         if not os.path.exists(full_filename):
             # We couldn't find the file using the palettizer path.
             # Let's look in the entire Pandora folder!
-            file_basename = os.path.basename(ilename)
-            full_filename = PalettizeUtils.search_for_file_in(self.pandora_dir, file_basename)
+            full_filename = PalettizeUtils.search_for_file_in(self.pandora_dir, os.path.basename(filename))
 
             if not full_filename:
                 # Well, it's not here...
