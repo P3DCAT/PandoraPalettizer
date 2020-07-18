@@ -156,4 +156,4 @@ Some stray images might lose their landscapeness, depending on your resize strat
 
 This tool was created by Disyer, with the hope that others will be able to contribute to the Toontown Texture Restoration Project.
 
-Many thanks to [https://github.com/satire6/Spotify](satire6) for releasing the Spotify repository in the first place! Without satire6, this tool would have never been made.
+Many thanks to [satire6](https://github.com/satire6/Spotify) for releasing the Spotify repository in the first place! Without satire6, this tool would have never been made.
