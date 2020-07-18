@@ -18,9 +18,11 @@ class PalettizerException(Exception):
 
 class Palettizer(object):
 
-    def __init__(self, pandora_dir=None, blur_amount=1.0, maximum_size=2048, debug=True):
+    def __init__(self, pandora_dir=None, resize_strategy='round', resize_threshold=1.5, blur_amount=1.0, maximum_size=2048, debug=True):
         self.set_pandora_dir(pandora_dir)
         self.maximum_size = maximum_size
+        self.resize_strategy = resize_strategy
+        self.resize_threshold = resize_threshold
         self.blur_amount = blur_amount
         self.debug = debug
 
@@ -113,8 +115,8 @@ class Palettizer(object):
         return new_image
 
     def scale_power_of_2(self, x_size, y_size):
-        x_size = PalettizeUtils.next_power_of_2(x_size)
-        y_size = PalettizeUtils.next_power_of_2(y_size)
+        x_size = PalettizeUtils.get_power_of_2(x_size, self.resize_strategy, self.resize_threshold)
+        y_size = PalettizeUtils.get_power_of_2(y_size, self.resize_strategy, self.resize_threshold)
 
         # We will cut the resolution down one power until we reach our maximum size.
         while x_size > self.maximum_size or y_size > self.maximum_size:

@@ -18,6 +18,18 @@ Since the Pandora leak is from 2010, it does not contain all textures from the 2
 
 Don't worry: when you run the program, it will list all textures used inside a single palette image! If a palette has to be repaired, this will greatly help with the manual texture lookup times.
 
+**Important!** When Pandora Palettizer is building palettes, it does two important translation steps: resizing the image to a nearby power of two, and applying a Gaussian blur on the image.
+
+The Gaussian blur on the image is necessary, because some textures in a palette might have a very low resolution. Resizing those images many times would result in a very blocky image. Therefore, blurring is performed on those textures when resizing them to the required size. This Gaussian blur can be controlled using the `--blur-amount`, or disabled even.
+
+Resizing the image to a nearby power of two is another necessary step, required by the Panda3D engine by default.
+
+By default, Pandora Palettizer will round to the nearest power of two. If a source image does not suffer more than 50% quality loss, it will downscale the image. However, if more than 50% quality loss is detected, then the image will be upscaled automatically.
+
+It is possible to setup Pandora Palettizer to always upscale images, or always downscale them, using `--resize-strategy upscale` and `--resize-strategy downscale`, respectively.
+
+To control the rounding threshold for rounding to the nearest power of two, use the `--resize-threshold` flag. For example, to automatically upscale when a `20%` loss in original quality is detected, use `--resize-threshold 1.2`. To automatically upscale when a `75%` loss is detected, or downscale otherwise, use `--resize-threshold 1.75`.
+
 * Use the `--jpg` flag to convert all palettes into JPG+RGB combo textures.
 * Use the `--png` flag to convert all palettes into PNG textures.
 * Use the `--all` flag to convert all palettes into both JPG+RGB and PNG textures.
@@ -26,6 +38,8 @@ Don't worry: when you run the program, it will list all textures used inside a s
 * Use the `--skip-stray` flag to skip building stray images. If this flag is enabled, only palettes will be built.
 * Use the `--max-size` flag to set the maximum texture size. For example, `--max-size 2048` will not allow textures larger than 2048x2048 to be created. This is the default maximums size.
 * Use the `--blur-amount` flag to set the amount of blurring used during texture resizing. When a texture is resized by Pandora Palettizer, it will be slightly blurred if necessary. Set this to 1.0 for default blurring behavior, and 0.0 to disable blurring altogether (which is faster, but yields ugly results).
+* Use the `--resize-strategy` flag to set the resizing strategy. This can be either `upscale`, `downscale` or `round`.
+* Use the `--resize-threshold` flag to set the resize rounding threshold. This is a number between `1.0` and `2.0`. By default, this is set to `1.5`, which will automatically round to the nearest power of two.
 * Use the `--boo` flag to specify the full path of the textures.boo file! For example: `--boo textures_backup.boo`
 * Use the `--output` flag to specify the full path of the output directory. By default, this is the `built_palettes` directory.
 * Use the `--texture-dir` flag to set your Spotify/Pandora directory. This is the directory that contains the `char`, `maps`, etc. directories.
@@ -46,10 +60,12 @@ cd PandoraPalettizer
 ## Running
 
 ```
-usage: python -m palettizer.Main [--jpg] [--png] [--all] [--dump] [--skip-palette]
+usage: python -m palettizer.Main [-h] [--jpg] [--png] [--all] [--dump] [--skip-palette]
                [--skip-stray] [--max-size MAX_SIZE]
-               [--blur-amount BLUR_AMOUNT] [--boo BOO] [--output OUTPUT]
-               [--texture-dir TEXTURE_DIR]
+               [--blur-amount BLUR_AMOUNT]
+               [--resize-strategy {upscale,downscale,round}]
+               [--resize-threshold {[between 1.0 and 2.0]}] [--boo BOO]
+               [--output OUTPUT] [--texture-dir TEXTURE_DIR]
 
 This script can be used to rebuild palettes from Pandora using the
 textures.boo file.
@@ -68,6 +84,23 @@ optional arguments:
   --blur-amount BLUR_AMOUNT, -x BLUR_AMOUNT
                         The amount of blur used during texture resizing. Set
                         this to 0 for no blurring. Default amount is 1.0.
+  --resize-strategy {upscale,downscale,round}, -r {upscale,downscale,round}
+                        The resize strategy to use when resizing images.
+                        Upscaling will always resize the texture to the next
+                        power of two, while downscaling will always resize it
+                        to the previous power of two. Rounding will use a
+                        threshold to determine whether to downscale or
+                        upscale, check --resize-threshold. Rounding at 50%
+                        quality loss is the default option.
+  --resize-threshold {[between 1.0 and 2.0]}, -t {[between 1.0 and 2.0]}
+                        A number between 1.0 and 2.0 that will help the
+                        palettizer decide whether to downscale or upscale the
+                        image. A value of 1.0 will always downscale the image,
+                        while a value of 2.0 will always upscale it. Use the
+                        value 1.5 to automatically upscale when the texture
+                        would lose 50% of detail (rounding). For example, the
+                        value 1.2 will automatically upscale to prevent losing
+                        20% of detail.
   --boo BOO, -b BOO     Your textures.boo file, containing palettization data.
   --output OUTPUT, -o OUTPUT
                         Your output folder.
@@ -85,6 +118,18 @@ To build only palettes from `C:\Data\Spotify`, building only JPG files, with a m
 
 ```
 python -m palettizer.Main --jpg --texture-dir C:\Data\Spotify --skip-palette --max-size 2048 --blur-amount 1.0
+```
+
+To build only stray images from `C:\Data\Spotify`, building only PNG files, while automatically upscaling when 25% quality loss is detected, downscaling otherwise:
+
+```
+python -m palettizer.Main --png --texture-dir C:\Data\Spotify --skip-stray --resize-strategy round --resize-threshold 1.25
+```
+
+To build all palettes and stray images from `C:\Data\Spotify`, building only JPG files, while automatically upscaling:
+
+```
+python -m palettizer.Main --png --texture-dir C:\Data\Spotify --skip-stray --resize-strategy upscale
 ```
 
 To dump the `textures.boo` file into a `boo.txt` file:
