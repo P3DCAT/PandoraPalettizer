@@ -93,9 +93,6 @@ def main():
         print('There is no maps folder in your Pandora directory!')
         return
 
-    jpg_output_dir = os.path.join(args.output, 'jpg')
-    png_output_dir = os.path.join(args.output, 'png')
-
     if args.max_size < 64:
         print('Maximum texture size is too small! Try at least 64x64!')
         return
@@ -104,10 +101,10 @@ def main():
     palettizer.load_boo_file(args.boo)
 
     if not args.skip_palette:
-        palettizer.palettize_all(jpg_output_dir, png_output_dir, save_jpg, save_png)
+        palettizer.palettize_all(os.path.join(args.output, 'jpg'), os.path.join(args.output, 'png'), save_jpg, save_png)
 
     if not args.skip_stray:
-        palettizer.save_all_strays(jpg_output_dir, png_output_dir, save_jpg, save_png)
+        palettizer.save_all_strays(os.path.join(args.output, 'jpg_stray'), os.path.join(args.output, 'png_stray'), save_jpg, save_png)
 
 if __name__ == '__main__':
     main()
