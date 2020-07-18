@@ -22,6 +22,9 @@ Don't worry: when you run the program, it will list all textures used inside a s
 * Use the `--png` flag to convert all palettes into PNG textures.
 * Use the `--all` flag to convert all palettes into both JPG+RGB and PNG textures.
 * Use the `--dump` flag to dump the .boo file into a large file called `boo.txt`. This flag is most useful for developers.
+* Use the `--skip-palette` flag to skip building palettes. If this flag is enabled, only stray textures will be built.
+* Use the `--skip-stray` flag to skip building stray images. If this flag is enabled, only palettes will be built.
+* Use the `--max-size` flag to set the maximum texture size. For example, `--max-size 2048` will not allow textures larger than 2048x2048 to be created. This is the default maximums size.
 * Use the `--boo` flag to specify the full path of the textures.boo file! For example: `--boo textures_backup.boo`
 * Use the `--output` flag to specify the full path of the output directory. By default, this is the `built_palettes` directory.
 * Use the `--texture-dir` flag to set your Spotify/Pandora directory. This is the directory that contains the `char`, `maps`, etc. directories.
@@ -42,7 +45,8 @@ cd PandoraPalettizer
 ## Running
 
 ```
-usage: python -m palettizer.Main [-h] [--jpg] [--png] [--all] [--dump] [--boo BOO]
+usage: python -m palettizer.Main [-h] [--jpg] [--png] [--all] [--dump] [--skip-palette]
+               [--skip-stray] [--max-size MAX_SIZE] [--boo BOO]
                [--output OUTPUT] [--texture-dir TEXTURE_DIR]
 
 This script can be used to rebuild palettes from Pandora using the
@@ -54,6 +58,11 @@ optional arguments:
   --png, -p             Convert palettes to PNG textures.
   --all, -a             Convert palettes to both JPG+RGB and PNG textures.
   --dump, -d            Dump your textures.boo file into a boo.txt dump file.
+  --skip-palette, -n    Skips the creation of palettes.
+  --skip-stray, -m      Skips the creation of stray textures.
+  --max-size MAX_SIZE, -s MAX_SIZE
+                        The maximum size that a palettized texture can be,
+                        measured in pixels.
   --boo BOO, -b BOO     Your textures.boo file, containing palettization data.
   --output OUTPUT, -o OUTPUT
                         Your output folder.
@@ -61,10 +70,16 @@ optional arguments:
                         The location of your Pandora/Spotify folder.
 ```
 
-For example, to build all palettes from `C:\Data\Spotify`, building both JPG and PNG files, from the `textures.boo` file:
+For example, to build all palettes and stray images from `C:\Data\Spotify`, building both JPG and PNG files, from the `textures.boo` file:
 
 ```
 python -m palettizer.Main --jpg --png --texture-dir C:\Data\Spotify --boo textures.boo
+```
+
+To build only palettes from `C:\Data\Spotify`, building only JPG files, with a maximum size of `2048x2048`:
+
+```
+python -m palettizer.Main --jpg --texture-dir C:\Data\Spotify --skip-palette --max-size 2048
 ```
 
 To dump the `textures.boo` file into a `boo.txt` file:
