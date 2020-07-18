@@ -25,7 +25,7 @@ class Range(object):
         yield self
 
     def __str__(self):
-        return f'[between {self.start} and {self.end}]'
+        return f'between {self.start} and {self.end}'
 
 def main():
     parser = argparse.ArgumentParser(description='This script can be used to rebuild palettes from Pandora using the textures.boo file.')

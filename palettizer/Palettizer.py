@@ -29,9 +29,15 @@ class Palettizer(object):
         self.boo_file = None
 
     def get_sorted_palette_imgs(self):
+        """
+        Returns all palette images from the loaded .boo file, sorted by phase number and name.
+        """
         return sorted(self.boo_file.get_objects_of_type('PaletteImage'), key=lambda img: (img.get_phase_num(), img.basename))
 
     def get_texture_imgs(self):
+        """
+        Returns all texture images from the loaded .boo file.
+        """
         return self.boo_file.get_objects_of_type('TextureImage')
 
     def set_pandora_dir(self, pandora_dir):
@@ -82,13 +88,13 @@ class Palettizer(object):
         img = PNMImage()
         img.read(Filename.from_os_specific(full_filename))
 
-        needs_alpha_fill = img.num_channels != 4
+        needs_alpha_fill = img.num_channels not in (2, 4)
         img.set_color_type(4)
 
         if needs_alpha_fill:
             # We need an alpha channel no matter what, so if the image does not have one,
             # it needs to be filled immediately with opaque pixels as it starts out with transparent pixels
-            img.alpha_fill(0)
+            img.alpha_fill(1)
 
         return img
 
@@ -115,6 +121,12 @@ class Palettizer(object):
         return new_image
 
     def scale_power_of_2(self, x_size, y_size):
+        """
+        Scales a texture's size to a nearby power of two,
+        using this palettizer's preferred resize strategy and threshold.
+            :x_size: The original X size of the texture.
+            :y_size: The original Y size of the texture.
+        """
         x_size = PalettizeUtils.get_power_of_2(x_size, self.resize_strategy, self.resize_threshold)
         y_size = PalettizeUtils.get_power_of_2(y_size, self.resize_strategy, self.resize_threshold)
 
@@ -186,13 +198,13 @@ class Palettizer(object):
             raise PalettizerException('No action required.')
 
         for palette_img in self.get_sorted_palette_imgs():
-            new_image, alpha_image, has_alpha = self.palettize(palette_img, create_rgb=save_jpg)
+            new_image, alpha_image, has_alpha, rgb_only = self.palettize(palette_img, create_rgb=save_jpg)
             phase_dir = palette_img.page.group.dirname
 
             if save_png:
                 self.write_png(new_image, has_alpha, png_output_dir, phase_dir, palette_img.basename)
             if save_jpg:
-                self.write_jpg(new_image, alpha_image, jpg_output_dir, phase_dir, palette_img.basename)
+                self.write_jpg(new_image, alpha_image, jpg_output_dir, phase_dir, palette_img.basename, rgb_only)
 
     def save_all_strays(self, jpg_output_dir, png_output_dir, save_png=True, save_jpg=True):
         """
@@ -366,14 +378,16 @@ class Palettizer(object):
         # We will cut down the last channel when necessary.
         # Having a fourth, empty channel would only increase the file size.
         new_image = PNMImage(new_x_size, new_y_size, 4)
+        new_image.alpha_fill(1)
 
         # Textures with alpha always have four channels set (three for RGB and one for Alpha).
         has_alpha = palette_img.properties.effective_channels in (2, 4)
+        rgb_only = palette_img.properties.format == TextureGlobals.F_alpha
         alpha_image = None
 
         # If necessary and possible, create an alpha image as well.
         # Textures with alpha always have four channels set (three for RGB and one for Alpha).
-        if create_rgb and has_alpha:
+        if create_rgb and has_alpha and not rgb_only:
             alpha_image = PNMImage(new_x_size, new_y_size, 1)
             alpha_image.set_type(RGB_TYPE)
 
@@ -449,11 +463,12 @@ class Palettizer(object):
                         sx = tex_x_size - 1 - ((-sx - 1) % tex_x_size) if sx < 0 else sx % tex_x_size
 
                     new_image.set_xel(x, y, texture_img.get_xel(sx, sy))
+                    new_image.set_alpha(x, y, texture_img.get_alpha(sx, sy))
 
                     if alpha_image:
                         alpha_image.set_gray(x, y, texture_img.get_alpha(sx, sy))
 
-        return new_image, alpha_image, has_alpha
+        return new_image, alpha_image, has_alpha, rgb_only
 
     def write_png(self, new_image, has_alpha, folder, phase_dir, basename):
         """

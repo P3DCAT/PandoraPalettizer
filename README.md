@@ -126,7 +126,7 @@ To build only stray images from `C:\Data\Spotify`, building only PNG files, whil
 python -m palettizer.Main --png --texture-dir C:\Data\Spotify --skip-stray --resize-strategy round --resize-threshold 1.25
 ```
 
-To build all palettes and stray images from `C:\Data\Spotify`, building only JPG files, while automatically upscaling:
+To build only palettes from `C:\Data\Spotify`, building only JPG files, while automatically upscaling:
 
 ```
 python -m palettizer.Main --png --texture-dir C:\Data\Spotify --skip-stray --resize-strategy upscale
@@ -154,6 +154,6 @@ Some stray images might lose their landscapeness, depending on your resize strat
 
 ## Credits
 
-This tool was created by Disyer, with the hope that others will be able to contribute to the Toontown Texture Restoration Project.
+This tool was created by [Disyer](https://github.com/darktohka), with the hope that others will be able to contribute to the Toontown Texture Restoration Project.
 
 Many thanks to [satire6](https://github.com/satire6/Spotify) for releasing the Spotify repository in the first place! Without satire6, this tool would have never been made.
