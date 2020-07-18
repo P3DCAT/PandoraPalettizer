@@ -18,6 +18,7 @@ def main():
     parser.add_argument('--skip-palette', '-n', action='store_true', help='Skips the creation of palettes.')
     parser.add_argument('--skip-stray', '-m', action='store_true', help='Skips the creation of stray textures.')
     parser.add_argument('--max-size', '-s', type=int, default=2048, help='The maximum size that a palettized texture can be, measured in pixels.')
+    parser.add_argument('--blur-amount', '-x', type=float, default=1.0, help='The amount of blur used during texture resizing. Set this to 0 for no blurring. Default amount is 1.0.')
     parser.add_argument('--boo', '-b', help='Your textures.boo file, containing palettization data.')
     parser.add_argument('--output', '-o', help='Your output folder.')
     parser.add_argument('--texture-dir', '-i', help='The location of your Pandora/Spotify folder.')
@@ -37,7 +38,7 @@ def main():
         print(f'{args.boo} does not exist!')
         return
 
-    palettizer = Palettizer(maximum_size=args.max_size)
+    palettizer = Palettizer(blur_amount=args.blur_amount, maximum_size=args.max_size)
 
     if args.dump:
         palettizer.load_boo_file(args.boo)

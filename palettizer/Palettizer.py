@@ -3,8 +3,7 @@ from .bam.BamFile import BamFile
 from .bam import TextureGlobals
 from .PalettizeGlobals import *
 from . import PalettizeUtils
-import math
-import os
+import math, os
 
 """
   PANDORA PALETTIZER
@@ -19,9 +18,10 @@ class PalettizerException(Exception):
 
 class Palettizer(object):
 
-    def __init__(self, pandora_dir=None, maximum_size=2048, debug=True):
+    def __init__(self, pandora_dir=None, blur_amount=1.0, maximum_size=2048, debug=True):
         self.set_pandora_dir(pandora_dir)
         self.maximum_size = maximum_size
+        self.blur_amount = blur_amount
         self.debug = debug
 
         self.boo_file = None
@@ -104,7 +104,12 @@ class Palettizer(object):
         # Resize the image using Panda3D's gaussian filter algorithm, to fit our x_size and y_size.
         # WARNING! This blurs the image if too small!!! (Gaussian blur)
         new_image = PNMImage(x_size, y_size, image.get_num_channels(), image.get_maxval(), image.get_type())
-        new_image.gaussian_filter_from(1.0, image)
+
+        if self.blur_amount > 0:
+            new_image.gaussian_filter_from(self.blur_amount, image)
+        else:
+            new_image.quick_filter_from(image)
+
         return new_image
 
     def scale_power_of_2(self, x_size, y_size):

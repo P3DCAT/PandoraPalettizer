@@ -25,6 +25,7 @@ Don't worry: when you run the program, it will list all textures used inside a s
 * Use the `--skip-palette` flag to skip building palettes. If this flag is enabled, only stray textures will be built.
 * Use the `--skip-stray` flag to skip building stray images. If this flag is enabled, only palettes will be built.
 * Use the `--max-size` flag to set the maximum texture size. For example, `--max-size 2048` will not allow textures larger than 2048x2048 to be created. This is the default maximums size.
+* Use the `--blur-amount` flag to set the amount of blurring used during texture resizing. When a texture is resized by Pandora Palettizer, it will be slightly blurred if necessary. Set this to 1.0 for default blurring behavior, and 0.0 to disable blurring altogether (which is faster, but yields ugly results).
 * Use the `--boo` flag to specify the full path of the textures.boo file! For example: `--boo textures_backup.boo`
 * Use the `--output` flag to specify the full path of the output directory. By default, this is the `built_palettes` directory.
 * Use the `--texture-dir` flag to set your Spotify/Pandora directory. This is the directory that contains the `char`, `maps`, etc. directories.
@@ -45,9 +46,10 @@ cd PandoraPalettizer
 ## Running
 
 ```
-usage: python -m palettizer.Main [-h] [--jpg] [--png] [--all] [--dump] [--skip-palette]
-               [--skip-stray] [--max-size MAX_SIZE] [--boo BOO]
-               [--output OUTPUT] [--texture-dir TEXTURE_DIR]
+usage: python -m palettizer.Main [--jpg] [--png] [--all] [--dump] [--skip-palette]
+               [--skip-stray] [--max-size MAX_SIZE]
+               [--blur-amount BLUR_AMOUNT] [--boo BOO] [--output OUTPUT]
+               [--texture-dir TEXTURE_DIR]
 
 This script can be used to rebuild palettes from Pandora using the
 textures.boo file.
@@ -63,6 +65,9 @@ optional arguments:
   --max-size MAX_SIZE, -s MAX_SIZE
                         The maximum size that a palettized texture can be,
                         measured in pixels.
+  --blur-amount BLUR_AMOUNT, -x BLUR_AMOUNT
+                        The amount of blur used during texture resizing. Set
+                        this to 0 for no blurring. Default amount is 1.0.
   --boo BOO, -b BOO     Your textures.boo file, containing palettization data.
   --output OUTPUT, -o OUTPUT
                         Your output folder.
@@ -76,10 +81,10 @@ For example, to build all palettes and stray images from `C:\Data\Spotify`, buil
 python -m palettizer.Main --jpg --png --texture-dir C:\Data\Spotify --boo textures.boo
 ```
 
-To build only palettes from `C:\Data\Spotify`, building only JPG files, with a maximum size of `2048x2048`:
+To build only palettes from `C:\Data\Spotify`, building only JPG files, with a maximum size of `2048x2048` and regular blurring (1.0 amount):
 
 ```
-python -m palettizer.Main --jpg --texture-dir C:\Data\Spotify --skip-palette --max-size 2048
+python -m palettizer.Main --jpg --texture-dir C:\Data\Spotify --skip-palette --max-size 2048 --blur-amount 1.0
 ```
 
 To dump the `textures.boo` file into a `boo.txt` file:
