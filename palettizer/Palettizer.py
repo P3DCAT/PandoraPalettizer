@@ -3,7 +3,8 @@ from .bam.BamFile import BamFile
 from .bam import TextureGlobals
 from .PalettizeGlobals import *
 from . import PalettizeUtils
-import os, math
+import math
+import os
 
 """
   PANDORA PALETTIZER
@@ -85,7 +86,7 @@ class Palettizer(object):
         if needs_alpha_fill:
             # We need an alpha channel no matter what, so if the image does not have one,
             # it needs to be filled immediately with opaque pixels as it starts out with transparent pixels
-            img.alpha_fill(1)
+            img.alpha_fill(0)
 
         return img
 
@@ -105,6 +106,17 @@ class Palettizer(object):
         new_image = PNMImage(x_size, y_size, image.get_num_channels(), image.get_maxval(), image.get_type())
         new_image.gaussian_filter_from(1.0, image)
         return new_image
+
+    def scale_power_of_2(self, x_size, y_size):
+        x_size = PalettizeUtils.next_power_of_2(x_size)
+        y_size = PalettizeUtils.next_power_of_2(y_size)
+
+        # We will cut the resolution down one power until we reach our maximum size.
+        while x_size > self.maximum_size or y_size > self.maximum_size:
+            x_size //= 2
+            y_size //= 2
+
+        return x_size, y_size
 
     def load_boo_file(self, filename):
         """
@@ -230,8 +242,7 @@ class Palettizer(object):
         image = self.read_texture(source.filename)
 
         # Let's save the texture as a power of two resolution.
-        x_size = PalettizeUtils.next_power_of_2(image.get_x_size())
-        y_size = PalettizeUtils.next_power_of_2(image.get_y_size())
+        x_size, y_size = self.scale_power_of_2(image.get_x_size(), image.get_y_size())
 
         alpha_image = None
 
@@ -338,13 +349,7 @@ class Palettizer(object):
 
         # Power of two time!
         # It's easier for the game engine to load, as it does not have to scale it automatically.
-        new_x_size = PalettizeUtils.next_power_of_2(new_x_size)
-        new_y_size = PalettizeUtils.next_power_of_2(new_y_size)
-
-        # We will cut the resolution down one power until we reach our maximum size.
-        while new_x_size > self.maximum_size or new_y_size > self.maximum_size:
-            new_x_size //= 2
-            new_y_size //= 2
+        new_x_size, new_y_size = self.scale_power_of_2(new_x_size, new_y_size)
 
         # We've changed the palette size. It is necessary to recalculate our texture distortion.
         x_distortion = new_x_size / current_x_size
@@ -464,7 +469,7 @@ class Palettizer(object):
             # We do not have any alpha pixels, it would be wise to remove the alpha channel
             new_image.remove_alpha()
 
-        new_image.write(Filename.from_os_specific(palette_path + '.png'))
+        new_image.write(Filename.from_os_specific(f'{palette_path}.png'))
 
     def write_jpg(self, new_image, alpha_image, folder, phase_dir, basename, rgb_only=False):
         """
@@ -486,13 +491,13 @@ class Palettizer(object):
 
         # We have an RGB only file!
         if rgb_only:
-            new_image.write(Filename.from_os_specific(palette_path + '.rgb'))
+            new_image.write(Filename.from_os_specific(f'{palette_path}.rgb'))
             return
 
         # JPG files do not require alpha channels, so remove it.
         new_image.remove_alpha()
-        new_image.write(Filename.from_os_specific(palette_path + '.jpg'))
+        new_image.write(Filename.from_os_specific(f'{palette_path}.jpg'))
 
         # Write our alpha file if it exists.
         if alpha_image is not None:
-            alpha_image.write(Filename.from_os_specific(palette_path + '_a.rgb'))
+            alpha_image.write(Filename.from_os_specific(f'{palette_path}_a.rgb'))

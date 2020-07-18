@@ -17,6 +17,7 @@ def main():
     parser.add_argument('--dump', '-d', action='store_true', help='Dump your textures.boo file into a boo.txt dump file.')
     parser.add_argument('--skip-palette', '-n', action='store_true', help='Skips the creation of palettes.')
     parser.add_argument('--skip-stray', '-m', action='store_true', help='Skips the creation of stray textures.')
+    parser.add_argument('--max-size', '-s', type=int, default=2048, help='The maximum size that a palettized texture can be, measured in pixels.')
     parser.add_argument('--boo', '-b', help='Your textures.boo file, containing palettization data.')
     parser.add_argument('--output', '-o', help='Your output folder.')
     parser.add_argument('--texture-dir', '-i', help='The location of your Pandora/Spotify folder.')
@@ -36,7 +37,7 @@ def main():
         print(f'{args.boo} does not exist!')
         return
 
-    palettizer = Palettizer()
+    palettizer = Palettizer(maximum_size=args.max_size)
 
     if args.dump:
         palettizer.load_boo_file(args.boo)
@@ -73,6 +74,10 @@ def main():
 
     jpg_output_dir = os.path.join(args.output, 'jpg')
     png_output_dir = os.path.join(args.output, 'png')
+
+    if args.max_size < 64:
+        print('Maximum texture size is too small! Try at least 64x64!')
+        return
 
     palettizer.set_pandora_dir(args.texture_dir)
     palettizer.load_boo_file(args.boo)
