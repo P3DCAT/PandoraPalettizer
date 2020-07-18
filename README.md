@@ -50,7 +50,7 @@ Your Python version must be at least 3.6, but newer versions are appreciated.
 
 Make sure you've got Panda3D installed. The newer, the better.
 
-You must clone the repository. This project has one dependency: `Pillow`, which can be installed using pip.
+You must clone the repository. This project has no dependencies other than Panda3D.
 
 ```
 git clone https://github.com/P3DCAT/PandoraPalettizer
@@ -149,3 +149,11 @@ You MUST run a manual optimization of all palettes after building the Pandora/Sp
 ```
 egg-palettize -af C:\Data\Spotify\maps\texture.txa --opt --all --egg
 ```
+
+Some stray images might lose their landscapeness, depending on your resize strategy. Consider choosing another resize strategy, or fixing those textures manually.
+
+## Credits
+
+This tool was created by Disyer, with the hope that others will be able to contribute to the Toontown Texture Restoration Project.
+
+Many thanks to [https://github.com/satire6/Spotify](satire6) for releasing the Spotify repository in the first place! Without satire6, this tool would have never been made.
