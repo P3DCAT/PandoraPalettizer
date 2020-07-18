@@ -36,7 +36,7 @@ To control the rounding threshold for rounding to the nearest power of two, use 
 * Use the `--dump` flag to dump the .boo file into a large file called `boo.txt`. This flag is most useful for developers.
 * Use the `--skip-palette` flag to skip building palettes. If this flag is enabled, only stray textures will be built.
 * Use the `--skip-stray` flag to skip building stray images. If this flag is enabled, only palettes will be built.
-* Use the `--max-size` flag to set the maximum texture size. For example, `--max-size 2048` will not allow textures larger than 2048x2048 to be created. This is the default maximums size.
+* Use the `--max-size` flag to set the maximum texture size. For example, `--max-size 2048` will not allow textures larger than 2048x2048 to be created. This is the default maximum size.
 * Use the `--blur-amount` flag to set the amount of blurring used during texture resizing. When a texture is resized by Pandora Palettizer, it will be slightly blurred if necessary. Set this to 1.0 for default blurring behavior, and 0.0 to disable blurring altogether (which is faster, but yields ugly results).
 * Use the `--resize-strategy` flag to set the resizing strategy. This can be either `upscale`, `downscale` or `round`.
 * Use the `--resize-threshold` flag to set the resize rounding threshold. This is a number between `1.0` and `2.0`. By default, this is set to `1.5`, which will automatically round to the nearest power of two.
@@ -151,6 +151,18 @@ egg-palettize -af C:\Data\Spotify\maps\texture.txa --opt --all --egg
 ```
 
 Some stray images might lose their landscapeness, depending on your resize strategy. Consider choosing another resize strategy, or fixing those textures manually.
+
+## Footnote
+
+[Disyer](https://github.com/darktohka) has taken the liberty to try his own hand at compiling Spotify, as well as the palettes using Pandora Palettizer.
+
+His textures.boo file, boo.txt dump and JPG+PNG palettized textures can be found on [Google Drive](https://drive.google.com/uc?id=1lXsXVufKF5P3O12A7uAJLUFFjOraHe4c&export=download).
+
+Those textures were built with the following settings:
+
+```
+python -m palettizer.Main --texture-dir C:\Data\Spotify --max-size 2048 --jpg --png --resize-threshold 1.2 --resize-strategy round
+```
 
 ## Credits
 
