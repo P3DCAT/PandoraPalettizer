@@ -2,7 +2,7 @@
 
 Pandora Palettizer is a tool that can be used to automatically convert textures.boo files into FULL RESOLUTION palettes!
 
-This tool is a very important cornerstone for the Toontown Texture Restoration Project.
+This tool is a very important cornerstone of the Toontown Texture Restoration Project.
 
 The idea of this project is simple.
 
