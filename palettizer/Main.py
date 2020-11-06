@@ -1,4 +1,4 @@
-from .Palettizer import Palettizer
+from palettizer.Palettizer import Palettizer
 import argparse, os
 
 """

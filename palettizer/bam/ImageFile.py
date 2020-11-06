@@ -1,6 +1,6 @@
-from .BamObject import BamObject
-from .TextureProperties import TextureProperties
-from .BamGlobals import *
+from p3bamboo.BamObject import BamObject
+from palettizer.PalettizeGlobals import PI_VERSION
+from palettizer.bam.TextureProperties import TextureProperties
 
 """
   PANDORA PALETTIZER
@@ -15,6 +15,8 @@ class ImageFile(BamObject):
         BamObject.__init__(self, bam_file, bam_version)
 
     def load(self, di):
+        BamObject.load(self, di)
+
         self.properties = self.load_type(TextureProperties, di)
         self.filename = di.get_string()
         self.alpha_filename = di.get_string() # Always empty on source image
@@ -29,6 +31,8 @@ class ImageFile(BamObject):
         self.y_size = di.get_int32()
 
     def write(self, write_version, dg):
+        BamObject.write(self, write_version, dg)
+
         self.properties.write(write_version, dg)
         dg.add_string(self.filename)
         dg.add_string(self.alpha_filename)

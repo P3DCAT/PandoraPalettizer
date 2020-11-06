@@ -1,6 +1,5 @@
-from .BamObject import BamObject
-from .ImageFile import ImageFile
-from .BamGlobals import *
+from p3bamboo.BamObject import BamObject
+from palettizer.bam.ImageFile import ImageFile
 
 """
   PANDORA PALETTIZER
@@ -20,11 +19,13 @@ class SourceTextureImage(ImageFile):
 
     def load(self, di):
         ImageFile.load(self, di)
-        self.texture_id = read_pointer(di) # TextureImage
+
+        self.texture_id = self.bam_file.read_pointer(di) # TextureImage
 
     def write(self, write_version, dg):
-        ImageFile.write(self, di)
-        write_pointer(dg, self.texture_id)
+        ImageFile.write(self, write_version, dg)
+
+        self.bam_file.write_pointer(dg, self.texture_id)
 
     def __str__(self):
         return 'SourceTextureImage(parent={0}, texture_id={1}'.format(

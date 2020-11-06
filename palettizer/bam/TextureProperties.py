@@ -1,6 +1,6 @@
-from .BamObject import BamObject
-from .TextureGlobals import *
-from .BamGlobals import *
+from p3bamboo.BamObject import BamObject
+from palettizer.PalettizeGlobals import PI_VERSION
+from palettizer.bam.TextureGlobals import *
 
 """
   PANDORA PALETTIZER
@@ -15,13 +15,15 @@ class TextureProperties(BamObject):
         BamObject.__init__(self, bam_file, bam_version)
 
     def load(self, di):
+        BamObject.load(self, di)
+
         self.got_num_channels = di.get_bool()
         self.num_channels = di.get_int32()
 
         if PI_VERSION >= 9:
             self.effective_channels = di.get_int32()
         else:
-            self.effective_channels = num_channels
+            self.effective_channels = self.num_channels
 
         self.format = di.get_int32()
         self.force_format = di.get_bool()
@@ -46,10 +48,12 @@ class TextureProperties(BamObject):
 
         self.anisotropic_degree = di.get_int32()
 
-        self.color_type_id = read_pointer(di)
-        self.alpha_type_id = read_pointer(di)
+        self.color_type_id = self.bam_file.read_pointer(di)
+        self.alpha_type_id = self.bam_file.read_pointer(di)
 
     def write(self, write_version, dg):
+        BamObject.write(self, write_version, dg)
+
         dg.add_bool(self.got_num_channels)
         dg.add_int32(self.num_channels)
 
@@ -73,14 +77,15 @@ class TextureProperties(BamObject):
 
         dg.add_int32(self.anisotropic_degree)
 
-        write_pointer(dg, self.color_type_id)
-        write_pointer(dg, self.alpha_type_id)
+        self.bam_file.write_pointer(dg, self.color_type_id)
+        self.bam_file.write_pointer(dg, self.alpha_type_id)
 
     def get_type_string(self):
         if not self.color_type_id:
             return 'none'
         if self.alpha_type_id:
             return 'alpha'
+
         return 'color'
 
     def __str__(self):

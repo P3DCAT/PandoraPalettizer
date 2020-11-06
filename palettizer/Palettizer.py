@@ -1,8 +1,8 @@
 from panda3d.core import Filename, PNMImage, LTexCoordd
-from .bam.BamFile import BamFile
-from .bam import TextureGlobals
-from .PalettizeGlobals import *
-from . import PalettizeUtils
+from p3bamboo.BamFactory import BamFactory
+from p3bamboo.BamFile import BamFile
+from palettizer.bam import TextureGlobals
+from palettizer import PalettizeGlobals, PalettizeUtils
 import math, os
 
 """
@@ -12,6 +12,47 @@ import math, os
   Author: Disyer
   Date: 2020/07/17
 """
+
+SETUP_P3BAMBOO = False
+
+def setup_p3bamboo():
+    global SETUP_P3BAMBOO
+
+    if SETUP_P3BAMBOO:
+        return
+
+    from palettizer.bam.ClearedRegion import ClearedRegion
+    from palettizer.bam.DestTextureImage import DestTextureImage
+    from palettizer.bam.EggFile import EggFile
+    from palettizer.bam.ImageFile import ImageFile
+    from palettizer.bam.Matrix3F import Matrix3F
+    from palettizer.bam.PaletteGroup import PaletteGroup
+    from palettizer.bam.PaletteGroups import PaletteGroups
+    from palettizer.bam.PaletteImage import PaletteImage
+    from palettizer.bam.PalettePage import PalettePage
+    from palettizer.bam.SourceTextureImage import SourceTextureImage
+    from palettizer.bam.TextureImage import TextureImage
+    from palettizer.bam.TexturePlacement import TexturePlacement
+    from palettizer.bam.TexturePosition import TexturePosition
+    from palettizer.bam.TextureProperties import TextureProperties
+    from palettizer.bam.TextureReference import TextureReference
+
+    BamFactory.register_type('ClearedRegion', ClearedRegion)
+    BamFactory.register_type('DestTextureImage', DestTextureImage)
+    BamFactory.register_type('EggFile', EggFile)
+    BamFactory.register_type('ImageFile', ImageFile)
+    BamFactory.register_type('Matrix3F', Matrix3F)
+    BamFactory.register_type('PaletteGroup', PaletteGroup)
+    BamFactory.register_type('PaletteGroups', PaletteGroups)
+    BamFactory.register_type('PaletteImage', PaletteImage)
+    BamFactory.register_type('PalettePage', PalettePage)
+    BamFactory.register_type('SourceTextureImage', SourceTextureImage)
+    BamFactory.register_type('TextureImage', TextureImage)
+    BamFactory.register_type('TexturePlacement', TexturePlacement)
+    BamFactory.register_type('TexturePosition', TexturePosition)
+    BamFactory.register_type('TextureProperties', TextureProperties)
+    BamFactory.register_type('TextureReference', TextureReference)
+    SETUP_P3BAMBOO = True
 
 class PalettizerException(Exception):
     pass
@@ -148,6 +189,7 @@ class Palettizer(object):
         if not os.path.exists(filename):
             raise PalettizerException(f'Texture boo file at {filename} does not exist!')
 
+        setup_p3bamboo()
         self.boo_file = BamFile()
 
         with open(filename, 'rb') as f:
@@ -270,7 +312,7 @@ class Palettizer(object):
 
         if dest.alpha_filename and has_alpha and create_rgb and not rgb_only:
             alpha_image = PNMImage(x_size, y_size, 1)
-            alpha_image.set_type(RGB_TYPE)
+            alpha_image.set_type(PalettizeGlobals.RGB_TYPE)
 
             # Copy alpha channel from source image
             for i in range(x_size):
@@ -388,7 +430,7 @@ class Palettizer(object):
         # Textures with alpha always have four channels set (three for RGB and one for Alpha).
         if create_rgb and has_alpha and not rgb_only:
             alpha_image = PNMImage(new_x_size, new_y_size, 1)
-            alpha_image.set_type(RGB_TYPE)
+            alpha_image.set_type(PalettizeGlobals.RGB_TYPE)
 
         for i, placement in enumerate(palette_img.placements):
             # Find the loaded source image from before...

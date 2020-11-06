@@ -1,5 +1,4 @@
-from .BamObject import BamObject
-from .BamGlobals import *
+from p3bamboo.BamObject import BamObject
 
 """
   PANDORA PALETTIZER
@@ -18,14 +17,14 @@ class PaletteGroups(BamObject):
         return [self.bam_file.get_object(group_id) for group_id in self.group_ids]
 
     def load(self, di):
-        num_groups = di.get_int32()
-        self.group_ids = [read_pointer(di) for i in range(num_groups)] # PaletteGroup
+        BamObject.load(self, di)
+
+        self.group_ids = self.bam_file.read_pointer_int32_list(di) # PaletteGroup
 
     def write(self, write_version, dg):
-        dg.add_int32(len(self.group_ids))
+        BamObject.write(self, write_version, dg)
 
-        for group_id in self.group_ids:
-            write_pointer(dg, group_id)
+        self.bam_file.write_pointer_int32_list(dg, self.group_ids)
 
     def __str__(self):
         return 'PaletteGroups(group_ids={0})'.format(self.group_ids)

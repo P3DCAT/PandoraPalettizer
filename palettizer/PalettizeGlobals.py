@@ -8,6 +8,5 @@ from panda3d.core import PNMFileTypeRegistry
   Date: 2020/07/17
 """
 
-POWER_OF_TWO = True
-
+PI_VERSION = 20
 RGB_TYPE = PNMFileTypeRegistry.get_global_ptr().get_type_from_extension('.rgb')

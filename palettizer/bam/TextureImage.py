@@ -1,8 +1,8 @@
-from .BamObject import BamObject
-from .ImageFile import ImageFile
-from .PaletteGroups import PaletteGroups
-from .BamGlobals import *
-from .TextureGlobals import *
+from p3bamboo.BamObject import BamObject
+from palettizer.PalettizeGlobals import PI_VERSION
+from palettizer.bam.ImageFile import ImageFile
+from palettizer.bam.PaletteGroups import PaletteGroups
+from palettizer.bam.TextureGlobals import *
 
 """
   PANDORA PALETTIZER
@@ -30,6 +30,7 @@ class TextureImage(ImageFile):
 
     def load(self, di):
         ImageFile.load(self, di)
+
         self.name = di.get_string()
         self.is_surprise = di.get_bool()
         self.ever_read_image = di.get_bool()
@@ -55,16 +56,14 @@ class TextureImage(ImageFile):
         self.actual_assigned_groups = self.load_type(PaletteGroups, di)
 
         num_placements = di.get_uint32()
-        self.placement_ids = [read_pointer(di) for i in range(num_placements * 2)] # TexturePlacement
+        self.placement_ids = [self.bam_file.read_pointer(di) for i in range(num_placements * 2)] # TexturePlacement
 
-        num_sources = di.get_uint32()
-        self.source_ids = [read_pointer(di) for i in range(num_sources)] # SourceTextureImage
-
-        num_dests = di.get_uint32()
-        self.dest_ids = [read_pointer(di) for i in range(num_dests)] # DestTextureImage
+        self.source_ids = self.bam_file.read_pointer_uint32_list(di) # SourceTextureImage
+        self.dest_ids = self.bam_file.read_pointer_uint32_list(di) # DestTextureImage
 
     def write(self, write_version, dg):
-        ImageFile.write(self, di)
+        ImageFile.write(self, write_version, dg)
+
         dg.add_string(self.name)
         dg.add_bool(self.is_surprise)
         dg.add_bool(self.ever_read_image)
@@ -85,17 +84,10 @@ class TextureImage(ImageFile):
         dg.add_uint32(len(self.placement_ids) // 2)
 
         for placement_id in self.placement_ids:
-            write_pointer(dg, placement_id)
+            self.bam_file.write_pointer(dg, placement_id)
 
-        dg.add_uint32(len(self.source_ids))
-
-        for source_id in self.source_ids:
-            write_pointer(dg, source_id)
-
-        dg.add_uint32(len(self.dest_ids))
-
-        for dest_id in self.dest_ids:
-            write_pointer(dg, dest_id)
+        self.bam_file.write_pointer_uint32_list(self.source_ids)
+        self.bam_file.write_pointer_uint32_list(self.dest_ids)
 
     def __str__(self):
         return 'TextureImage(parent={0}, name={1}, is_surprise={2}, ever_read_image={3}, forced_grayscale={4}, alpha_bits={5}, alpha_mode={6}, mid_pixel_ratio={7}, is_cutout={8}, txa_wrap_u={9}, txa_wrap_v={10}, actual_assigned_groups={11}, placement_ids={12}, source_ids={13}, dest_ids={14}'.format(

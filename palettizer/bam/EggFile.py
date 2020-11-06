@@ -1,6 +1,5 @@
-from .BamObject import BamObject
-from .PaletteGroups import PaletteGroups
-from .BamGlobals import *
+from p3bamboo.BamObject import BamObject
+from palettizer.bam.PaletteGroups import PaletteGroups
 
 """
   PANDORA PALETTIZER
@@ -23,17 +22,18 @@ class EggFile(BamObject):
         return self.bam_file.get_object(self.default_group_id)
 
     def load(self, di):
+        BamObject.load(self, di)
+
         self.name = di.get_string()
         self.current_directory = di.get_string()
         self.source_filename = di.get_string()
         self.dest_filename = di.get_string()
         self.egg_comment = di.get_string()
 
-        num_texture_refs = di.get_uint32()
-        self.texture_ref_ids = [read_pointer(di) for i in range(num_texture_refs)] # TextureReference
+        self.texture_ref_ids = self.bam_file.read_pointer_uint32_list(di) # TextureReference
 
         self.explicitly_assigned_groups = self.load_type(PaletteGroups, di)
-        self.default_group_id = read_pointer(di) # PaletteGroup
+        self.default_group_id = self.bam_file.read_pointer(di) # PaletteGroup
 
         self.is_surprise = di.get_bool()
         self.is_stale = di.get_bool()
@@ -48,10 +48,10 @@ class EggFile(BamObject):
         dg.add_uint32(len(self.texture_ref_ids))
 
         for texture_ref_id in self.texture_ref_ids:
-            write_pointer(dg, texture_ref_id)
+            self.bam_file.write_pointer(dg, texture_ref_id)
 
         self.explicitly_assigned_groups.write(write_version, dg)
-        write_pointer(dg, self.default_group_id)
+        self.bam_file.write_pointer(dg, self.default_group_id)
 
         dg.add_bool(self.is_surprise)
         dg.add_bool(self.is_stale)

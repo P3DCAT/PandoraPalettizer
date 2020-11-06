@@ -1,7 +1,6 @@
 from panda3d.core import LMatrix3d, LVecBase2d
-from .BamObject import BamObject
-from .TexturePosition import TexturePosition
-from .BamGlobals import *
+from p3bamboo.BamObject import BamObject
+from palettizer.bam.TexturePosition import TexturePosition
 
 """
   PANDORA PALETTIZER
@@ -66,10 +65,12 @@ class TexturePlacement(BamObject):
         return source_uvs * dest_uvs
 
     def load(self, di):
-        self.texture_id = read_pointer(di) # TextureImage
-        self.group_id = read_pointer(di) # PaletteGroup
-        self.image_id = read_pointer(di) # PaletteImage
-        self.dest_image_id = read_pointer(di) # DestTextureImage
+        BamObject.load(self, di)
+
+        self.texture_id = self.bam_file.read_pointer(di) # TextureImage
+        self.group_id = self.bam_file.read_pointer(di) # PaletteGroup
+        self.image_id = self.bam_file.read_pointer(di) # PaletteImage
+        self.dest_image_id = self.bam_file.read_pointer(di) # DestTextureImage
 
         self.has_uvs = di.get_bool()
         self.size_known = di.get_bool()
@@ -79,17 +80,16 @@ class TexturePlacement(BamObject):
         self.placed = self.load_type(TexturePosition, di)
         self.omit_reason = di.get_int32()
 
-        num_references = di.get_int32()
-        self.reference_ids = [read_pointer(di) for i in range(num_references)]
-
-        num_texture_swaps = di.get_int32()
-        self.texture_swap_ids = [read_pointer(di) for i in range(num_texture_swaps)]
+        self.reference_ids = self.bam_file.read_pointer_int32_list(di)
+        self.texture_swap_ids = self.bam_file.read_pointer_int32_list(di)
 
     def write(self, write_version, dg):
-        write_pointer(dg, self.texture_id)
-        write_pointer(dg, self.group_id)
-        write_pointer(dg, self.image_id)
-        write_pointer(dg, self.dest_image_id)
+        BamObject.write(self, write_version, dg)
+
+        self.bam_file.write_pointer(dg, self.texture_id)
+        self.bam_file.write_pointer(dg, self.group_id)
+        self.bam_file.write_pointer(dg, self.image_id)
+        self.bam_file.write_pointer(dg, self.dest_image_id)
 
         dg.add_bool(self.has_uvs)
         dg.add_bool(self.size_known)
@@ -99,15 +99,8 @@ class TexturePlacement(BamObject):
         self.placed.write(write_version, dg)
         dg.add_int32(self.omit_reason)
 
-        dg.add_int32(len(self.reference_ids))
-
-        for reference_id in self.reference_ids:
-            write_pointer(dg, reference_id)
-
-        dg.add_int32(len(self.texture_swap_ids))
-
-        for texture_swap_id in self.texture_swap_ids:
-            write_pointer(dg, texture_swap_id)
+        self.bam_file.write_pointer_int32_list(dg, self.reference_ids)
+        self.bam_file.write_pointer_int32_list(dg, self.texture_swap_ids)
 
     def __str__(self):
         return 'TexturePlacement(texture_id={0}, group_id={1}, image_id={2}, dest_image_id={3}, has_uvs={4}, size_known={5}, position={6}, is_filled={7}, placed={8}, omit_reason={9}, reference_ids={10}, texture_swap_ids={11})'.format(

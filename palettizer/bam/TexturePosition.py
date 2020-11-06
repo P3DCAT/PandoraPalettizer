@@ -1,8 +1,7 @@
 from panda3d.core import LPoint2d
-from .BamObject import BamObject
-from .TextureProperties import TextureProperties
-from .TextureGlobals import *
-from .BamGlobals import *
+from p3bamboo.BamObject import BamObject
+from palettizer.bam.TextureProperties import TextureProperties
+from palettizer.bam.TextureGlobals import *
 
 """
   PANDORA PALETTIZER
@@ -20,6 +19,8 @@ class TexturePosition(BamObject):
         return self.max_uv - self.min_uv
 
     def load(self, di):
+        BamObject.load(self, di)
+
         self.margin = di.get_int32()
         self.x = di.get_int32()
         self.y = di.get_int32()
@@ -31,6 +32,8 @@ class TexturePosition(BamObject):
         self.wrap_v = di.get_int32()
 
     def write(self, write_version, dg):
+        BamObject.write(self, write_version, dg)
+
         dg.add_int32(self.margin)
         dg.add_int32(self.x)
         dg.add_int32(self.y)

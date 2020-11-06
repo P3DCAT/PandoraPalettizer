@@ -1,8 +1,7 @@
-from .BamObject import BamObject
-from .Matrix3F import Matrix3F
-from .TextureProperties import TextureProperties
-from .TextureGlobals import *
-from .BamGlobals import *
+from p3bamboo.BamObject import BamObject
+from palettizer.bam.Matrix3F import Matrix3F
+from palettizer.bam.TextureProperties import TextureProperties
+from palettizer.bam.TextureGlobals import *
 
 """
   PANDORA PALETTIZER
@@ -29,15 +28,17 @@ class TextureReference(BamObject):
         return self.bam_file.get_object(self.placement_id)
 
     def load(self, di):
-        self.egg_file_id = read_pointer(di)
+        BamObject.load(self, di)
+
+        self.egg_file_id = self.bam_file.read_pointer(di)
 
         self.tref_name = di.get_string()
 
         self.tex_mat = self.load_type(Matrix3F, di)
         self.inv_tex_mat = self.load_type(Matrix3F, di)
 
-        self.source_texture_id = read_pointer(di) # SourceTextureImage
-        self.placement_id = read_pointer(di) # TexturePlacement
+        self.source_texture_id = self.bam_file.read_pointer(di) # SourceTextureImage
+        self.placement_id = self.bam_file.read_pointer(di) # TexturePlacement
 
         self.uses_alpha = di.get_bool()
         self.any_uvs = di.get_bool()
@@ -48,15 +49,17 @@ class TextureReference(BamObject):
         self.properties = self.load_type(TextureProperties, di)
 
     def write(self, write_version, dg):
-        write_pointer(dg, self.egg_file_id)
+        BamObject.write(self, write_version, dg)
+
+        self.bam_file.write_pointer(dg, self.egg_file_id)
 
         dg.add_string(self.tref_name)
 
         self.tex_mat.write(write_version, dg)
         self.inv_tex_mat.write(write_version, dg)
 
-        write_pointer(dg, self.source_texture_id)
-        write_pointer(dg, self.placement_id)
+        self.bam_file.write_pointer(dg, self.source_texture_id)
+        self.bam_file.write_pointer(dg, self.placement_id)
 
         dg.add_bool(self.uses_alpha)
         dg.add_bool(self.any_uvs)

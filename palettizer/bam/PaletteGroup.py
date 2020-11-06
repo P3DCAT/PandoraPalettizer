@@ -1,6 +1,6 @@
-from .BamObject import BamObject
-from .PaletteGroups import PaletteGroups
-from .BamGlobals import *
+from p3bamboo.BamObject import BamObject
+from palettizer.PalettizeGlobals import PI_VERSION
+from palettizer.bam.PaletteGroups import PaletteGroups
 
 """
   PANDORA PALETTIZER
@@ -23,6 +23,8 @@ class PaletteGroup(BamObject):
         return [self.bam_file.get_object(page_id) for page_id in self.page_ids]
 
     def load(self, di):
+        BamObject.load(self, di)
+
         self.name = di.get_string()
         self.dirname = di.get_string()
         self.palette_groups = self.load_type(PaletteGroups, di)
@@ -30,11 +32,8 @@ class PaletteGroup(BamObject):
         self.dependency_order = di.get_int32()
         self.dirname_order = di.get_int32()
 
-        num_placements = di.get_uint32()
-        self.placement_ids = [read_pointer(di) for i in range(num_placements)] # TexturePlacement
-
-        num_pages = di.get_uint32()
-        self.page_ids = [read_pointer(di) for i in range(num_pages)] # PalettePage
+        self.placement_ids = self.bam_file.read_pointer_uint32_list(di) # TexturePlacement
+        self.page_ids = self.bam_file.read_pointer_uint32_list(di) # PalettePage
 
         if PI_VERSION >= 19:
             self.has_margin_override = di.get_bool()
@@ -44,6 +43,8 @@ class PaletteGroup(BamObject):
             self.margin_override = 0
 
     def write(self, write_version, dg):
+        BamObject.write(self, write_version, dg)
+
         dg.add_string(self.name)
         dg.add_string(self.dirname)
         self.palette_groups.write(write_version, dg)
@@ -51,15 +52,8 @@ class PaletteGroup(BamObject):
         dg.add_int32(self.dependency_order)
         dg.add_int32(self.dirname_order)
 
-        dg.add_uint32(len(self.placement_ids))
-
-        for placement_id in self.placement_ids:
-            write_pointer(dg, placement_id)
-
-        dg.add_uint32(len(self.page_ids))
-
-        for page_id in self.page_ids:
-            write_pointer(dg, page_id)
+        self.bam_file.write_pointer_uint32_list(dg, self.placement_ids)
+        self.bam_file.write_pointer_uint32_list(dg, self.page_ids)
 
         if PI_VERSION >= 19:
             dg.add_bool(self.has_margin_override)

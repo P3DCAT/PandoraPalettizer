@@ -1,6 +1,6 @@
-from .BamObject import BamObject
-from .ImageFile import ImageFile
-from .BamGlobals import *
+from p3bamboo.BamObject import BamObject
+from palettizer.bam.ImageFile import ImageFile
+from palettizer.bam.ClearedRegion import ClearedRegion
 
 """
   PANDORA PALETTIZER
@@ -32,30 +32,28 @@ class PaletteImage(ImageFile):
 
     def load(self, di):
         ImageFile.load(self, di)
+
         num_cleared_regions = di.get_uint32()
         self.cleared_regions = [self.load_type(ClearedRegion, di) for i in range(num_cleared_regions)]
 
-        num_placements = di.get_uint32()
-        self.placement_ids = [read_pointer(di) for i in range(num_placements)] # TexturePlacement
+        self.placement_ids = self.bam_file.read_pointer_uint32_list(di) # TexturePlacement
 
-        self.page_id = read_pointer(di) # PalettePage
+        self.page_id = self.bam_file.read_pointer(di) # PalettePage
         self.index = di.get_uint32()
         self.basename = di.get_string()
         self.new_image = di.get_bool()
 
     def write(self, write_version, dg):
-        ImageFile.write(self, di)
+        ImageFile.write(self, write_version, dg)
+
         dg.add_uint32(len(self.cleared_regions))
 
         for region in self.cleared_regions:
             region.write(write_version, dg)
 
-        dg.add_uint32(len(self.placement_ids))
+        self.bam_file.write_pointer_uint32_list(dg, self.placement_ids)
 
-        for placement_id in self.placement_ids:
-            write_pointer(dg, placement_id)
-
-        write_pointer(dg, self.page_id)
+        self.bam_file.write_pointer(dg, self.page_id)
         dg.add_uint32(self.index)
         dg.add_string(self.basename)
         dg.add_bool(self.new_image)

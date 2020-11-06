@@ -1,6 +1,5 @@
-from .BamObject import BamObject
-from .ImageFile import ImageFile
-from .BamGlobals import *
+from p3bamboo.BamObject import BamObject
+from palettizer.bam.ImageFile import ImageFile
 
 """
   PANDORA PALETTIZER
@@ -18,7 +17,7 @@ class DestTextureImage(ImageFile):
         ImageFile.load(self, di)
 
     def write(self, write_version, dg):
-        ImageFile.write(self, di)
+        ImageFile.write(self, write_version, dg)
 
     def __str__(self):
         return 'DestTextureImage(parent={0})'.format(
